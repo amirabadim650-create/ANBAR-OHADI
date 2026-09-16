@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>انبارداری حرفه‌ای</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111827">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,sans-serif;background:#f3f4f6;color:#111827}
+header{background:#111827;color:white;padding:16px 20px;position:sticky;top:0;z-index:10}header h1{margin:0;font-size:20px}header small{opacity:.75}
+nav{display:flex;gap:8px;overflow:auto;background:white;padding:10px;border-bottom:1px solid #ddd;position:sticky;top:64px;z-index:9}
+nav button{border:0;background:#eef2f7;padding:10px 14px;border-radius:10px;white-space:nowrap;cursor:pointer}nav button.active{background:#111827;color:white}
+main{max-width:1200px;margin:auto;padding:16px}.page{display:none}.page.active{display:block}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:white;border-radius:16px;padding:18px;box-shadow:0 2px 8px #0000000d}.card b{font-size:25px;display:block;margin-top:7px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.panel{background:white;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px #0000000d}
+label{display:block;font-size:13px;margin:10px 0 5px}input,select,textarea{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:10px;font:inherit;background:white}textarea{min-height:75px}
+button.primary{background:#111827;color:white;border:0;border-radius:10px;padding:11px 16px;cursor:pointer}button.danger{background:#fee2e2;color:#991b1b;border:0;border-radius:8px;padding:7px 10px;cursor:pointer}
+table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #eee;text-align:right;font-size:13px}th{background:#f9fafb}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.muted{color:#6b7280}.search{margin-bottom:12px}.tag{display:inline-block;padding:4px 8px;border-radius:999px;background:#e5e7eb;font-size:12px}.in{background:#dcfce7;color:#166534}.out{background:#fee2e2;color:#991b1b}
+@media print{body.printing *{visibility:hidden!important}body.printing .print-target,body.printing .print-target *{visibility:visible!important}body.printing .print-target{position:absolute;right:0;top:0;width:100%;box-shadow:none!important}body.printing .no-print{display:none!important}}
+@media(max-width:800px){.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}main{padding:10px}.panel{padding:14px}}
+</style>
+</head>
+<body>
+<header><h1>سیستم انبارداری حرفه‌ای</h1><small>نسخه تحت وب — اطلاعات روی همین دستگاه ذخیره می‌شود</small></header>
+<nav>
+<button class="active" data-page="dashboard">داشبورد</button><button data-page="products">کالاها</button><button data-page="movement">ورود / خروج</button><button data-page="history">سوابق</button><button data-page="reports">گزارش‌ها</button><button data-page="backup">پشتیبان‌گیری</button>
+</nav>
+<main>
+<section id="dashboard" class="page active">
+<div class="cards">
+<div class="card">تعداد کالاها<b id="statProducts">0</b></div><div class="card">موجودی کل<b id="statStock">0</b></div><div class="card">ورودی‌ها<b id="statIn">0</b></div><div class="card">خروجی‌ها<b id="statOut">0</b></div>
+</div>
+<div class="panel"><h2>آخرین تراکنش‌ها</h2><div id="recent"></div></div>
+</section>
+
+<section id="products" class="page">
+<div class="panel"><h2>افزودن کالا</h2>
+<div class="grid"><div><label>نام کالا</label><input id="pName" placeholder="مثلاً پیچ ۱۰"></div><div><label>کد کالا</label><input id="pCode" placeholder="اختیاری"></div><div><label>واحد</label><input id="pUnit" value="عدد"></div><div><label>حداقل موجودی</label><input id="pMin" type="number" value="0" min="0"></div></div>
+<div class="actions"><button class="primary" onclick="addProduct()">ثبت کالا</button></div></div>
+<div class="panel"><h2>فهرست کالاها</h2><input class="search" id="productSearch" oninput="renderProducts()" placeholder="جست‌وجوی نام یا کد..."><div id="productTable"></div></div><div class="panel" id="productHistoryPanel" style="display:none"><h2 id="productHistoryTitle">سوابق کالا</h2><div class="actions no-print"><button class="primary" onclick="printPDF('productHistoryPanel')">🖨️ ذخیره سوابق این کالا به PDF</button></div><div id="productHistoryTable"></div></div>
+</section>
+
+<section id="movement" class="page">
+<div class="panel"><h2>ثبت ورود / خروج</h2>
+<div class="grid"><div><label>نوع عملیات</label><select id="mType"><option value="in">ورود</option><option value="out">خروج</option></select></div><div><label>کالا</label><input id="movementProductSearch" class="search" oninput="renderSelect()" placeholder="جست‌وجوی نام کالا..." autocomplete="off"><select id="mProduct"></select></div><div><label>تعداد</label><input id="mQty" type="number" min="1"></div><div><label>تاریخ عملیات (شمسی)</label><input id="mDate" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۶/۲۶" autocomplete="off"></div></div><div class="muted" style="margin-top:8px">تاریخ و ساعت دقیق ثبت عملیات به‌صورت خودکار ذخیره می‌شود.</div>
+<label>توضیحات</label><textarea id="mNote" placeholder="مثلاً تحویل به بخش فروش"></textarea><div class="actions"><button class="primary" onclick="addMovement()">ثبت عملیات</button></div>
+</div></section>
+
+<section id="history" class="page"><div class="panel" id="historyPanel"><h2>سوابق ورود و خروج</h2><div class="actions no-print"><button class="primary" onclick="printPDF('historyPanel')">🖨️ ذخیره سوابق به PDF</button></div><input class="search no-print" id="historySearch" oninput="renderHistory()" placeholder="جست‌وجو..."><div id="historyTable"></div></div></section>
+
+<section id="reports" class="page"><div class="panel" id="reportPanel"><h2>گزارش موجودی</h2><div class="actions no-print"><button class="primary" onclick="printPDF('reportPanel')">🖨️ ذخیره گزارش به PDF</button></div><div id="reportTable"></div></div></section>
+
+<section id="backup" class="page"><div class="panel"><h2>پشتیبان‌گیری و انتقال اطلاعات</h2>
+<p class="muted">فایل پشتیبان را روی گوشی بگیر و به لپ‌تاپ منتقل کن، سپس در لپ‌تاپ بازیابی کن؛ یا برعکس.</p>
+<div class="actions"><button class="primary" onclick="exportData()">خروجی گرفتن از کل اطلاعات</button><label style="display:inline-block"><input id="importFile" type="file" accept=".json" onchange="importData(event)" style="display:none"><button class="primary" onclick="document.getElementById('importFile').click()">بازیابی اطلاعات</button></label></div>
+</div></section>
+</main>
+<script>
+const KEY="pro_inventory_v1";
+let db=JSON.parse(localStorage.getItem(KEY)||'{"products":[],"movements":[]}');
+const save=()=>{localStorage.setItem(KEY,JSON.stringify(db));renderAll()};
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+function stock(id){return db.movements.filter(x=>x.productId===id).reduce((a,x)=>a+(x.type==="in"?x.qty:-x.qty),0)}
+function productName(id){let p=db.products.find(x=>x.id===id);return p?p.name:"کالای حذف‌شده"}
+function addProduct(){let name=pName.value.trim();if(!name)return alert("نام کالا را وارد کنید");db.products.push({id:crypto.randomUUID(),name,code:pCode.value.trim(),unit:pUnit.value.trim()||"عدد",min:+pMin.value||0});pName.value=pCode.value="";save();alert("کالا ثبت شد")}
+function addMovement(){let id=mProduct.value,qty=+mQty.value,jdate=faNums(mDate.value).trim(),parts=jdate.split(/[\\/\\-]/),date=(parts.length===3&&parts.every(Boolean)?jalaliToGregorian(parts[0],parts[1],parts[2]):"");if(!id||qty<=0||!date)return alert("نوع، کالا، تعداد و تاریخ شمسی را کامل کنید (مثلاً ۱۴۰۵/۰۶/۲۶)");if(mType.value==="out"&&stock(id)<qty)return alert("موجودی کافی نیست");db.movements.push({id:crypto.randomUUID(),productId:id,type:mType.value,qty,date,note:mNote.value.trim(),createdAt:new Date().toISOString()});mQty.value="";mNote.value="";save();alert("عملیات با موفقیت ثبت شد")} 
+function deleteProduct(id){let p=db.products.find(x=>x.id===id);if(!p)return;if(!confirm(`کالای «${p.name}» حذف شود؟\nسوابق ورود و خروج این کالا نیز حذف خواهد شد.`))return;db.products=db.products.filter(x=>x.id!==id);db.movements=db.movements.filter(x=>x.productId!==id);save();alert("کالا حذف شد")} 
+const faNums=s=>String(s).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d));
+const toFa=s=>String(s).replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
+function jalaliToGregorian(jy,jm,jd){jy=+jy;jm=+jm;jd=+jd;let gy=jy+621;let leapJ=-14;for(let y=jy;y<=jy;y++){leapJ+=Math.floor(y/33)*8+Math.floor((y%33+3)/4)}let march=20+Math.floor((gy%4+3)/4)-leapJ%4;let gy2=jm<=10?gy:gy+1;let days=jm<=6?(jm-1)*31+jd-1:6*31+(jm-7)*30+jd-1;let base=new Date(Date.UTC(gy,2,march));base.setUTCDate(base.getUTCDate()+days);return base.toISOString().slice(0,10)}
+function gregorianToJalali(gdate){let d=new Date(gdate+"T00:00:00Z");let gy=d.getUTCFullYear(),gm=d.getUTCMonth()+1,gd=d.getUTCDate();let jy=gy-621;let g=new Date(Date.UTC(gy,2,20));if(d<g)jy--;let start=jalaliToGregorian(jy,1,1);let s=new Date(start+"T00:00:00Z");let diff=Math.round((d-s)/86400000);let jm,jd;if(diff<186){jm=Math.floor(diff/31)+1;jd=diff%31+1}else{diff-=186;jm=Math.floor(diff/30)+7;jd=diff%30+1}return `${toFa(jy)}/${toFa(String(jm).padStart(2,"0"))}/${toFa(String(jd).padStart(2,"0"))}`}
+function faDate(date){if(!date)return "-";if(/^\d{4}-\d{2}-\d{2}$/.test(date))return gregorianToJalali(date);return date}
+function faDateTime(iso){if(!iso)return "-";let d=new Date(iso);let date=gregorianToJalali(d.toISOString().slice(0,10));let time=new Intl.DateTimeFormat("fa-IR",{hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23",timeZone:"Asia/Tehran"}).format(d);return `${date} - ${time}`}
+function renderProducts(){let q=(productSearch.value||"").toLowerCase();let a=db.products.filter(p=>(p.name+" "+p.code).toLowerCase().includes(q));productTable.innerHTML=`<table><tr><th>کالا</th><th>کد</th><th>واحد</th><th>موجودی</th><th>حداقل</th><th>عملیات</th></tr>${a.map(p=>`<tr><td><button style="border:0;background:none;padding:0;color:#2563eb;cursor:pointer;font:inherit" onclick="showProductHistory('${p.id}')">${esc(p.name)}</button></td><td>${esc(p.code)}</td><td>${esc(p.unit)}</td><td><b>${stock(p.id)}</b></td><td>${p.min}</td><td><button class="danger" onclick="deleteProduct('${p.id}')">حذف کالا</button></td></tr>`).join("")||"<tr><td colspan=6>کالایی ثبت نشده</td></tr>"}</table>`}
+function showProductHistory(id){let p=db.products.find(x=>x.id===id);if(!p)return;let a=[...db.movements].filter(x=>x.productId===id).sort((x,y)=>y.createdAt.localeCompare(x.createdAt));productHistoryPanel.style.display="block";productHistoryTitle.textContent=`سوابق ورود و خروج «${p.name}»`;productHistoryTable.innerHTML=`<table><tr><th>تاریخ عملیات</th><th>نوع</th><th>تعداد</th><th>تاریخ و ساعت ثبت</th><th>توضیحات</th></tr>${a.map(x=>`<tr><td>${faDate(x.date)}</td><td><span class="tag ${x.type}">${x.type==="in"?"ورود":"خروج"}</span></td><td>${x.qty} ${esc(p.unit)}</td><td>${faDateTime(x.createdAt)}</td><td>${esc(x.note)}</td></tr>`).join("")||"<tr><td colspan=5>برای این کالا سابقه‌ای ثبت نشده است.</td></tr>"}</table>`;productHistoryPanel.scrollIntoView({behavior:"smooth",block:"start"})}
+function renderSelect(){let q=(movementProductSearch.value||"").toLowerCase();let a=db.products.filter(p=>(p.name+" "+p.code).toLowerCase().includes(q));mProduct.innerHTML=a.map(p=>`<option value="${p.id}">${esc(p.name)} — موجودی: ${stock(p.id)} ${esc(p.unit)}</option>`).join("")||'<option value="">کالایی پیدا نشد</option>'}
+function renderHistory(){let q=(historySearch.value||"").toLowerCase();let a=[...db.movements].sort((x,y)=>y.date.localeCompare(x.date)).filter(x=>(productName(x.productId)+" "+x.note+" "+x.date).toLowerCase().includes(q));historyTable.innerHTML=`<table><tr><th>تاریخ عملیات</th><th>کالا</th><th>نوع</th><th>تعداد</th><th>تاریخ و ساعت ثبت</th><th>توضیحات</th></tr>${a.map(x=>`<tr><td>${faDate(x.date)}</td><td>${esc(productName(x.productId))}</td><td><span class="tag ${x.type}">${x.type==="in"?"ورود":"خروج"}</span></td><td>${x.qty}</td><td>${faDateTime(x.createdAt)}</td><td>${esc(x.note)}</td></tr>`).join("")||"<tr><td colspan=6>سابقه‌ای نیست</td></tr>"}</table>`}
+function renderReport(){let a=db.products;reportTable.innerHTML=`<table><tr><th>کالا</th><th>کد</th><th>واحد</th><th>موجودی</th><th>وضعیت</th></tr>${a.map(p=>{let s=stock(p.id);return `<tr><td>${esc(p.name)}</td><td>${esc(p.code)}</td><td>${esc(p.unit)}</td><td>${s}</td><td>${p.min>0&&s<=p.min?"⚠️ موجودی کم":"عادی"}</td></tr>`}).join("")||"<tr><td colspan=5>کالایی نیست</td></tr>"}</table>`}
+function renderDashboard(){statProducts.textContent=db.products.length;statStock.textContent=db.products.reduce((a,p)=>a+stock(p.id),0);statIn.textContent=db.movements.filter(x=>x.type==="in").reduce((a,x)=>a+x.qty,0);statOut.textContent=db.movements.filter(x=>x.type==="out").reduce((a,x)=>a+x.qty,0);let a=[...db.movements].sort((x,y)=>y.createdAt.localeCompare(x.createdAt)).slice(0,8);recent.innerHTML=a.length?`<table><tr><th>تاریخ عملیات</th><th>کالا</th><th>نوع</th><th>تعداد</th><th>ثبت در</th></tr>${a.map(x=>`<tr><td>${faDate(x.date)}</td><td>${esc(productName(x.productId))}</td><td>${x.type==="in"?"ورود":"خروج"}</td><td>${x.qty}</td><td>${faDateTime(x.createdAt)}</td></tr>`).join("")}</table>`:"هنوز تراکنشی ثبت نشده است."}
+function renderAll(){renderSelect();renderProducts();renderHistory();renderReport();renderDashboard()}
+function exportData(){let blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="inventory-backup.json";a.click();URL.revokeObjectURL(a.href)}
+function printPDF(id){document.body.classList.add("printing");document.querySelectorAll(".print-target").forEach(x=>x.classList.remove("print-target"));let el=document.getElementById(id);if(!el)return;el.classList.add("print-target");let oldTitle=document.title;document.title="گزارش انبارداری";window.print();setTimeout(()=>{el.classList.remove("print-target");document.body.classList.remove("printing");document.title=oldTitle},500)}
+function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.products||!x.movements)throw 0;if(confirm("اطلاعات فعلی با فایل پشتیبان جایگزین شود؟")){db=x;save();alert("بازیابی انجام شد")}}catch{alert("فایل پشتیبان معتبر نیست")}};r.readAsText(f)}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.page).classList.add("active")});
+mDate.value=gregorianToJalali(new Date().toISOString().slice(0,10));renderAll();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body></html>
